@@ -2,8 +2,7 @@
 Property listing parser.
 
 - Uses Amazon Nova Lite to extract units/beds/baths from `public_remark`.
-- Removes logically incorrect rows from the final output.
-- Also returns a separate list of ambiguous input rows (bad bed/bath data).
+- Ambiguity/validity is determined by the LLM from the provided JSON + remarks.
 """
 
 import json
@@ -36,68 +35,42 @@ def extract_json(text: str) -> dict:
 
 def is_ambiguous_input_row(row: dict) -> bool:
     """
-    True if the *input* row has logically incorrect values.
+    Deprecated: keep all rows for the model to resolve via `public_remark`.
 
-    Examples:
-    - bed <= 0
-    - bath <= 0
-    - bath > bed
+    The model prompt/output should decide what is ambiguous; we do not pre-filter
+    inputs based on local bed/bath heuristics.
     """
-    bed = row.get("bed")
-    bath = row.get("bath")
-
-    if not isinstance(bed, int) or not isinstance(bath, int):
-        return True
-    if bed <= 0 or bath <= 0:
-        return True
-    return bath > bed
+    _ = row
+    return False
 
 
 def is_ambiguous_model_row(row: dict) -> bool:
     """
-    True if the *model output* row is logically incorrect.
+    Deprecated: do not apply local heuristics to model outputs.
 
-    We only validate when both beds and baths are present.
+    The model decides ambiguity/validity; we keep model output as-is.
     """
-    beds = row.get("beds")
-    baths = row.get("baths")
-
-    if beds is None or baths is None:
-        return False
-    if not isinstance(beds, int) or not isinstance(baths, int):
-        return True
-    if beds <= 0 or baths <= 0:
-        return True
-    return baths > beds
+    _ = row
+    return False
 
 
 def clean_model_output(data: dict) -> dict:
-    """Remove properties with logically incorrect output values."""
+    """
+    Keep model output unchanged.
+
+    We intentionally avoid "cleanup" rules (e.g., beds/baths comparisons) because
+    ambiguity is resolved by the LLM using the full JSON context.
+    """
     props = data.get("properties", [])
-    cleaned = [p for p in props if not is_ambiguous_model_row(p)]
-    return {"properties": cleaned}
+    if not isinstance(props, list):
+        return {"properties": []}
+    return {"properties": props}
 
 
 def split_input_rows(input_json: dict) -> tuple[list[dict], list[dict]]:
     """Return (valid_rows, ambiguous_rows) from the input JSON."""
     rows = input_json.get("properties", [])
-    valid = []
-    ambiguous = []
-
-    for row in rows:
-        if is_ambiguous_input_row(row):
-            ambiguous.append(
-                {
-                    "comp_id": row.get("comp_id"),
-                    "bed": row.get("bed"),
-                    "bath": row.get("bath"),
-                    "public_remark": row.get("public_remark"),
-                }
-            )
-        else:
-            valid.append(row)
-
-    return valid, ambiguous
+    return rows, []
 
 
 def run_parser(input_json: dict) -> dict:
@@ -128,39 +101,25 @@ def main():
             input_data = json.load(f)
     else:
         input_data = {
-  "properties":[
-    {"comp_id":1,"bed":2,"bath":1,"public_remark":"Cozy 2 bedroom home with 1 bathroom and spacious living area."},
-    {"comp_id":2,"bed":3,"bath":2,"public_remark":"Comfortable 3 bedroom home with 2 bathrooms."},
-    {"comp_id":3,"bed":4,"bath":2,"public_remark":"Spacious family home with 4 bedrooms and 2 bathrooms."},
-    {"comp_id":4,"bed":5,"bath":3,"public_remark":"Large home offering 5 bedrooms and 3 bathrooms."},
-    {"comp_id":5,"bed":3,"bath":1,"public_remark":"Charming 3 bedroom home with 1 bathroom."},
-    {"comp_id":6,"bed":4,"bath":3,"public_remark":"Modern 4 bedroom home with 3 bathrooms."},
-    {"comp_id":7,"bed":2,"bath":2,"public_remark":"Comfortable 2 bedroom 2 bath property."},
-    {"comp_id":8,"bed":3,"bath":2,"public_remark":"Beautiful 3 bedroom, 2 bathroom home."},
-    {"comp_id":9,"bed":5,"bath":4,"public_remark":"Spacious 5 bedroom home with 4 bathrooms."},
-    {"comp_id":10,"bed":4,"bath":2,"public_remark":"Family friendly 4 bedroom home with 2 bathrooms."},
-    {"comp_id":11,"bed":3,"bath":2,"public_remark":"Lovely home offering 3 bedrooms and 2 baths."},
-    {"comp_id":12,"bed":2,"bath":1,"public_remark":"Cozy home with 2 bedrooms and 1 bath."},
-    {"comp_id":13,"bed":4,"bath":3,"public_remark":"Large family home with 4 bedrooms and 3 baths."},
-    {"comp_id":14,"bed":3,"bath":1,"public_remark":"Comfortable 3 bedroom home with single bathroom."},
-    {"comp_id":15,"bed":5,"bath":3,"public_remark":"Spacious layout with 5 bedrooms and 3 baths."},
-    {"comp_id":16,"bed":4,"bath":2,"public_remark":"Well maintained 4 bedroom home with 2 baths."},
-    {"comp_id":17,"bed":2,"bath":2,"public_remark":"Nice 2 bedroom property with 2 bathrooms."},
-    {"comp_id":18,"bed":3,"bath":2,"public_remark":"Beautiful 3 bedroom, 2 bath home."},
-    {"comp_id":19,"bed":4,"bath":3,"public_remark":"Spacious 4 bedroom 3 bath home."},
-    {"comp_id":20,"bed":2,"bath":1,"public_remark":"Comfortable 2 bedroom, 1 bath property."}
-  ]
-}
-
+        "properties": [
+            {"comp_id":1,"bed":2,"bath":1,"public_remark":"Charming 2-bedroom, 1-bath home with a bright living room and cozy kitchen."},
+            {"comp_id":2,"bed":3,"bath":2,"public_remark":"Spacious 3-bedroom, 2-bath home ideal for family living."},
+            {"comp_id":3,"bed":1,"bath":4,"public_remark":"The listing indicates 4 bathrooms for a 1-bedroom home, which appears incorrect and should be verified."},
+            {"comp_id":4,"bed":4,"bath":3,"public_remark":"Beautiful 4-bedroom, 3-bath home with modern finishes and large backyard."},
+            {"comp_id":5,"bed":0,"bath":2,"public_remark":"The listing shows 0 bedrooms while indicating 2 bathrooms which may be a data error."},
+            {"comp_id":6,"bed":5,"bath":1,"public_remark":"Spacious 5-bedroom, 1-bath home perfect for family living."},
+            {"comp_id":7,"bed":2,"bath":2,"public_remark":"Well maintained 2-bedroom, 2-bath home close to schools and parks."},
+            {"comp_id":8,"bed":3,"bath":7,"public_remark":"The property lists 7 bathrooms for a 3-bedroom home which seems inconsistent."},
+            {"comp_id":9,"bed":4,"bath":2,"public_remark":"Spacious 4-bedroom, 2-bath home perfect for family living."},
+            {"comp_id":10,"bed":2,"bath":9,"public_remark":"Listing currently shows 9 bathrooms for a 2-bedroom home which appears incorrect."}
+        ]
+        }
     try:
         result = run_parser(input_data)
-        valid_count = len(result["properties"])
-        error_count = len(result["ambiguous_properties"])
-        print(json.dumps({"properties": result["properties"]}, indent=2))
+        props = result.get("properties", [])
+        print(json.dumps({"properties": props}, indent=2))
         print("--------------------------------------------------------------------------------")
-        print(json.dumps({"ambiguous_properties": result["ambiguous_properties"]}, indent=2))
-        print("--------------------------------------------------------------------------------")
-        print(f"{valid_count} after cleanup , {error_count} error property")
+
     except Exception as e:
         print(f"Error: {e}")
     except json.JSONDecodeError as e:
