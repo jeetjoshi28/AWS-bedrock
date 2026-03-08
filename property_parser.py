@@ -107,8 +107,12 @@ def clean_model_output(data: dict[str, Any]) -> dict[str, Any]:
 
 def run_parser(input_json: dict) -> dict:
     model_input = {"properties": normalize_input_properties(input_json)}
-    prompt = TASK + json.dumps(model_input, indent=2, ensure_ascii=False)
-    response = generate_text(prompt, max_tokens=2048)
+    dynamic_json = json.dumps(model_input, indent=2, ensure_ascii=False)
+    response = generate_text(
+        system_prompt=TASK,
+        user_content=dynamic_json,
+        max_tokens=2048,
+    )
     model_data = extract_json(response)
     return clean_model_output(model_data)
 
@@ -119,27 +123,17 @@ def main():
             input_data = json.load(f)
     else:
         input_data = {
-  "properties":[
-    {"comp_id":1,"bed":2,"bath":1,"public_remark":"Cozy 2 bedroom home with 1 bathroom and spacious living area."},
-    {"comp_id":2,"bed":3,"bath":2,"public_remark":"Comfortable 3 bedroom home with 2 bathrooms."},
-    {"comp_id":3,"bed":4,"bath":2,"public_remark":"Spacious family home with 4 bedrooms and 2 bathrooms."},
-    {"comp_id":4,"bed":5,"bath":3,"public_remark":"Large home offering 5 bedrooms and 3 bathrooms."},
-    {"comp_id":5,"bed":3,"bath":1,"public_remark":"Charming 3 bedroom home with 1 bathroom."},
-    {"comp_id":6,"bed":4,"bath":3,"public_remark":"Modern 4 bedroom home with 3 bathrooms."},
-    {"comp_id":7,"bed":2,"bath":2,"public_remark":"Comfortable 2 bedroom 2 bath property."},
-    {"comp_id":8,"bed":3,"bath":2,"public_remark":"Beautiful 3 bedroom, 2 bathroom home."},
-    {"comp_id":9,"bed":5,"bath":4,"public_remark":"Spacious 5 bedroom home with 4 bathrooms."},
-    {"comp_id":10,"bed":4,"bath":2,"public_remark":"Family friendly 4 bedroom home with 2 bathrooms."},
-    {"comp_id":11,"bed":3,"bath":2,"public_remark":"Lovely home offering 3 bedrooms and 2 baths."},
-    {"comp_id":12,"bed":2,"bath":1,"public_remark":"Cozy home with 2 bedrooms and 1 bath."},
-    {"comp_id":13,"bed":4,"bath":3,"public_remark":"Large family home with 4 bedrooms and 3 baths."},
-    {"comp_id":14,"bed":3,"bath":1,"public_remark":"Comfortable 3 bedroom home with single bathroom."},
-    {"comp_id":15,"bed":5,"bath":3,"public_remark":"Spacious layout with 5 bedrooms and 3 baths."},
-    {"comp_id":16,"bed":4,"bath":2,"public_remark":"Well maintained 4 bedroom home with 2 baths."},
-    {"comp_id":17,"bed":2,"bath":2,"public_remark":"Nice 2 bedroom property with 2 bathrooms."},
-    {"comp_id":18,"bed":3,"bath":2,"public_remark":"Beautiful 3 bedroom, 2 bath home."},
-    {"comp_id":19,"bed":4,"bath":3,"public_remark":"Spacious 4 bedroom 3 bath home."},
-    {"comp_id":20,"bed":2,"bath":1,"public_remark":"Comfortable 2 bedroom, 1 bath property."}
+  "properties": [
+    {"comp_id":1,"bed":2,"bath":1,"public_remark":"Charming 2-bedroom, 1-bath home with a bright living room and cozy kitchen."},
+    {"comp_id":2,"bed":3,"bath":2,"public_remark":"Spacious 3-bedroom, 2-bath home ideal for family living."},
+    {"comp_id":3,"bed":1,"bath":4,"public_remark":"The listing indicates 4 bathrooms for a 1-bedroom home, which appears incorrect and should be verified."},
+    {"comp_id":4,"bed":4,"bath":3,"public_remark":"Beautiful 4-bedroom, 3-bath home with modern finishes and large backyard."},
+    {"comp_id":5,"bed":0,"bath":2,"public_remark":"The listing shows 0 bedrooms while indicating 2 bathrooms which may be a data error."},
+    {"comp_id":6,"bed":5,"bath":1,"public_remark":"This 5-bedroom property appears to have only 1 bathroom listed which may not reflect the actual layout."},
+    {"comp_id":7,"bed":2,"bath":2,"public_remark":"Well maintained 2-bedroom, 2-bath home close to schools and parks."},
+    {"comp_id":8,"bed":3,"bath":7,"public_remark":"The property lists 7 bathrooms for a 3-bedroom home which seems inconsistent."},
+    {"comp_id":9,"bed":4,"bath":2,"public_remark":"Spacious 4-bedroom, 2-bath home perfect for family living."},
+    {"comp_id":10,"bed":2,"bath":9,"public_remark":"Listing currently shows 9 bathrooms for a 2-bedroom home which appears incorrect."}
   ]
 }
     try:
