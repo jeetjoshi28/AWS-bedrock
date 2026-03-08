@@ -123,19 +123,19 @@ def main():
             input_data = json.load(f)
     else:
         input_data = {
-  "properties": [
-    {"comp_id":1,"bed":2,"bath":1,"public_remark":"Charming 2-bedroom, 1-bath home with a bright living room and cozy kitchen."},
-    {"comp_id":2,"bed":3,"bath":2,"public_remark":"Spacious 3-bedroom, 2-bath home ideal for family living."},
-    {"comp_id":3,"bed":1,"bath":4,"public_remark":"The listing indicates 4 bathrooms for a 1-bedroom home, which appears incorrect and should be verified."},
-    {"comp_id":4,"bed":4,"bath":3,"public_remark":"Beautiful 4-bedroom, 3-bath home with modern finishes and large backyard."},
-    {"comp_id":5,"bed":0,"bath":2,"public_remark":"The listing shows 0 bedrooms while indicating 2 bathrooms which may be a data error."},
-    {"comp_id":6,"bed":5,"bath":1,"public_remark":"This 5-bedroom property appears to have only 1 bathroom listed which may not reflect the actual layout."},
-    {"comp_id":7,"bed":2,"bath":2,"public_remark":"Well maintained 2-bedroom, 2-bath home close to schools and parks."},
-    {"comp_id":8,"bed":3,"bath":7,"public_remark":"The property lists 7 bathrooms for a 3-bedroom home which seems inconsistent."},
-    {"comp_id":9,"bed":4,"bath":2,"public_remark":"Spacious 4-bedroom, 2-bath home perfect for family living."},
-    {"comp_id":10,"bed":2,"bath":9,"public_remark":"Listing currently shows 9 bathrooms for a 2-bedroom home which appears incorrect."}
-  ]
-}
+            "properties": [
+                {"comp_id":1,"bed":2,"bath":1,"public_remark":"Charming 2-bedroom, 1-bath home with a bright living room and cozy kitchen."},
+                {"comp_id":2,"bed":3,"bath":2,"public_remark":"Spacious 3-bedroom, 2-bath home ideal for family living."},
+                {"comp_id":3,"bed":1,"bath":4,"public_remark":"The listing indicates 4 bathrooms for a 1-bedroom home, which appears incorrect and should be verified."},
+                {"comp_id":4,"bed":4,"bath":3,"public_remark":"Beautiful 4-bedroom, 3-bath home with modern finishes and large backyard."},
+                {"comp_id":5,"bed":0,"bath":2,"public_remark":"The listing shows 0 bedrooms while indicating 2 bathrooms which may be a data error."},
+                {"comp_id":6,"bed":5,"bath":1,"public_remark":"This 5-bedroom property appears to have only 1 bathroom listed which may not reflect the actual layout."},
+                {"comp_id":7,"bed":2,"bath":2,"public_remark":"Well maintained 2-bedroom, 2-bath home close to schools and parks."},
+                {"comp_id":8,"bed":3,"bath":7,"public_remark":"The property lists 7 bathrooms for a 3-bedroom home which seems inconsistent."},
+                {"comp_id":9,"bed":4,"bath":2,"public_remark":"Spacious 4-bedroom, 2-bath home perfect for family living."},
+                {"comp_id":10,"bed":2,"bath":9,"public_remark":"Listing currently shows 9 bathrooms for a 2-bedroom home which appears incorrect."}
+            ]
+        }
     try:
         result = run_parser(input_data)
     except json.JSONDecodeError as e:
